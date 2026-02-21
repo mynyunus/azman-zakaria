@@ -5,9 +5,8 @@ const backToTop = document.querySelector('.back-to-top');
 const anchorLinks = document.querySelectorAll('a[href^="#"]');
 const faqButtons = document.querySelectorAll('.faq-question');
 const revealItems = document.querySelectorAll('.reveal');
-const fbFrame = document.querySelector('#listing iframe');
-const fbFallback = document.querySelector('.fb-fallback');
 const aboutCarousel = document.querySelector('#tentang .about-carousel');
+const galleryCarousel = document.querySelector('#testimoni .gallery-carousel');
 
 function handleScrollState() {
   const isScrolled = window.scrollY > 24;
@@ -88,34 +87,19 @@ if ('IntersectionObserver' in window) {
   revealItems.forEach((item) => item.classList.add('is-visible'));
 }
 
-if (fbFrame && fbFallback) {
-  let loaded = false;
+function initCarousel(root, config) {
+  if (!root) return;
 
-  const timeoutId = window.setTimeout(() => {
-    if (!loaded) {
-      fbFallback.classList.add('show-fallback');
-    }
-  }, 6500);
+  const track = root.querySelector(config.trackSelector);
+  const slides = Array.from(root.querySelectorAll(config.slideSelector));
+  const dots = Array.from(root.querySelectorAll(config.dotSelector));
+  const prevButton = root.querySelector(config.prevButtonSelector);
+  const nextButton = root.querySelector(config.nextButtonSelector);
 
-  fbFrame.addEventListener('load', () => {
-    loaded = true;
-    window.clearTimeout(timeoutId);
-  });
+  if (!track || slides.length === 0) return;
 
-  fbFrame.addEventListener('error', () => {
-    fbFallback.classList.add('show-fallback');
-  });
-}
-
-if (aboutCarousel) {
-  const track = aboutCarousel.querySelector('.about-carousel-track');
-  const slides = Array.from(aboutCarousel.querySelectorAll('.about-slide'));
-  const dots = Array.from(aboutCarousel.querySelectorAll('.about-dot'));
-  const prevButton = aboutCarousel.querySelector('.about-carousel-btn.prev');
-  const nextButton = aboutCarousel.querySelector('.about-carousel-btn.next');
   let currentSlide = 0;
   let autoSlideTimer = null;
-
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const updateCarousel = (nextIndex) => {
@@ -143,26 +127,46 @@ if (aboutCarousel) {
   };
 
   const startAutoSlide = () => {
-    if (reduceMotion) return;
+    if (reduceMotion || slides.length < 2) return;
     stopAutoSlide();
-    autoSlideTimer = window.setInterval(() => updateCarousel(currentSlide + 1), 4800);
+    autoSlideTimer = window.setInterval(() => updateCarousel(currentSlide + 1), config.intervalMs);
   };
 
-  prevButton?.addEventListener('click', () => updateCarousel(currentSlide - 1));
-  nextButton?.addEventListener('click', () => updateCarousel(currentSlide + 1));
+  if (slides.length > 1) {
+    prevButton?.addEventListener('click', () => updateCarousel(currentSlide - 1));
+    nextButton?.addEventListener('click', () => updateCarousel(currentSlide + 1));
 
-  dots.forEach((dot, index) => {
-    dot.addEventListener('click', () => updateCarousel(index));
-  });
+    dots.forEach((dot, index) => {
+      dot.addEventListener('click', () => updateCarousel(index));
+    });
 
-  aboutCarousel.addEventListener('mouseenter', stopAutoSlide);
-  aboutCarousel.addEventListener('mouseleave', startAutoSlide);
-  aboutCarousel.addEventListener('focusin', stopAutoSlide);
-  aboutCarousel.addEventListener('focusout', startAutoSlide);
+    root.addEventListener('mouseenter', stopAutoSlide);
+    root.addEventListener('mouseleave', startAutoSlide);
+    root.addEventListener('focusin', stopAutoSlide);
+    root.addEventListener('focusout', startAutoSlide);
+  }
 
   updateCarousel(0);
   startAutoSlide();
 }
+
+initCarousel(aboutCarousel, {
+  trackSelector: '.about-carousel-track',
+  slideSelector: '.about-slide',
+  dotSelector: '.about-dot',
+  prevButtonSelector: '.about-carousel-btn.prev',
+  nextButtonSelector: '.about-carousel-btn.next',
+  intervalMs: 4800
+});
+
+initCarousel(galleryCarousel, {
+  trackSelector: '.gallery-carousel-track',
+  slideSelector: '.gallery-slide',
+  dotSelector: '.gallery-dot',
+  prevButtonSelector: '.gallery-carousel-btn.prev',
+  nextButtonSelector: '.gallery-carousel-btn.next',
+  intervalMs: 4300
+});
 
 window.addEventListener('click', (event) => {
   if (!mobileMenu || !navToggle) return;
